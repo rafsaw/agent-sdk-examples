@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+description: Code review agent — porównanie modeli OpenRouter (AI SDK)
+
+# Oś "prompt": surowy diff trafia wprost do agenta. Właściwa instrukcja
+# recenzenta żyje w REVIEWER_PROMPT (common/review-schema.ts) jako system prompt.
+prompts:
+  - "{{diff}}"
+
+# Oś "provider": jeden custom provider (provider.ts) sparametryzowany slugiem
+# modelu. Ten sam agent AI SDK uruchamiany na trzech modelach.
+providers:
+  - id: file://./provider.ts
+    label: gemini-3.5-flash
+    config:
+      model: google/gemini-3.5-flash
+  - id: file://./provider.ts
+    label: glm-5.1
+    config:
+      model: z-ai/glm-5.1
+  - id: file://./provider.ts
+    label: deepseek-v4-pro
+    config:
+      model: deepseek/deepseek-v4-pro
+
+# Asercje wspólne dla każdego testu i każdego modelu (walidacja techniczna).
+defaultTest:
+  assert:
+    # 1) Strukturalna — wyjście musi pasować do REVIEW_SCHEMA (Zod).
+    - type: javascript
+      value: file://./tests/assert-schema.ts
+    # 2) Deterministyczna — wszystkie oceny w dozwolonym zakresie 1-5.
+    - type: javascript
+      value: |
+        const r = JSON.parse(output);
+        return [r.correctness, r.security, r.performance, r.readability, r.testCoverage]
+          .every((n) => Number.isInteger(n) && n >= 1 && n <= 5);
+  options:
+    # Sędzia dla llm-rubric też przez OpenRouter (jeden klucz API w całym evalu).
+    # Mocniejszy model na ławie sędziowskiej niż recenzenci, których ocenia.
+    provider: openrouter:anthropic/claude-sonnet-4.6
+
+# Per-sample llm-as-a-judge: każda asercja sprawdza, czy pole "comment" wskazuje
+# JEDNĄ konkretną wadę z danego diffu. Nazwane metryki (metric) agregują wykrywalność
+# poszczególnych wad w siatce wyników — widać, który model co złapał.
+tests:
+  # ── sample-1: src/auth.js — wprowadza funkcję login() pełną luk bezpieczeństwa ──
+  - description: sample-1 (auth.js)
+    vars:
+      diff: file://../data/sample-1.md
+    assert:
+      - type: llm-rubric
+        metric: sqli
+        value: >
+          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "comment"
+          wskazuje SQL injection / podatność na wstrzyknięcie SQL wynikającą z
+          konkatenacji nazwy użytkownika do zapytania. Inaczej pass=false.
+      - type: llm-rubric
+        metric: plaintext-password
+        value: >
+          pass=true wyłącznie jeśli "comment" zauważa, że hasło jest porównywane
+          w postaci jawnej (plaintext), bez hashowania. Inaczej pass=false.
+      - type: llm-rubric
+        metric: weak-token
+        value: >
+          pass=true wyłącznie jeśli "comment" wskazuje, że token sesji ("tok_" +
+          username) jest przewidywalny / niebezpieczny i powinien być losowy.
+          Inaczej pass=false.
+      - type: llm-rubric
+        metric: missing-null-check
+        value: >
+          pass=true wyłącznie jeśli "comment" zauważa brak sprawdzenia, czy
+          użytkownik istnieje (rows[0] / user może być undefined przed odczytem
+          user.password). Inaczej pass=false.
+
+  # ── sample-2: UserCard.tsx — dodaje interaktywność (klikalna karta) ──
+  - description: sample-2 (UserCard.tsx)
+    vars:
+      diff: file://../data/sample-2.md
+    assert:
+      - type: llm-rubric
+        metric: keyboard-a11y
+        value: >
+          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "comment"
+          wskazuje problem dostępności: element z role="button" i onClick nie ma
+          obsługi klawiatury (brak onKeyDown/onKeyUp), więc jest nieobsługiwalny
+          z klawiatury. Inaczej pass=false.
+      - type: llm-rubric
+        metric: semantic-button
+        value: >
+          pass=true wyłącznie jeśli "comment" sugeruje użycie semantycznego
+          <button> zamiast klikalnego <div> z role="button". Inaczej pass=false.
+      - type: llm-rubric
+        metric: missing-tests
+        value: >
+          pass=true wyłącznie jeśli "comment" zauważa brak testów dla nowej
+          logiki interakcji (handleClick / stan expanded / wywołanie onSelect).
+          Inaczej pass=false.
