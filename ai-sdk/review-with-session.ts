@@ -3,13 +3,6 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { REVIEW_SCHEMA, REVIEWER_PROMPT_STRUCTURED } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Rola recenzenta (wspólna) trafia w ai-sdk do pola `instructions`.
-// REVIEW_SCHEMA (zod, wspólny dla przykładów) — z niego Output.object składa
-// structured output w pierwszym przebiegu.
-
-// W AI SDK `output` jest własnością agenta, nie pojedynczego wywołania — więc
-// structured output (przebieg 1) i zwykły tekst (przebieg 2) to DWA osobne agenty.
-// Łączy je ręcznie prowadzona historia `messages` (patrz niżej).
 const structuredReviewer = new ToolLoopAgent({
   model: openrouter("z-ai/glm-5.1"),
   instructions: REVIEWER_PROMPT_STRUCTURED,
@@ -24,23 +17,16 @@ const recaller = new ToolLoopAgent({
   stopWhen: stepCountIs(1),
 });
 
-// Entry point: brak sesji — historię prowadzisz sam i podajesz przy każdym wywołaniu.
-// To dokładnie ta różnica względem Claude Agent SDK: tam wznawiasz po `session_id`
-// (diff zostaje po stronie harnessu), tu kontekst „pamięta się" tylko dlatego, że
-// całe `messages` (z diffem włącznie) wieziesz ze sobą do kolejnego `generate()`.
 const diff = await readDiff();
 const messages: ModelMessage[] = [
   { role: "user", content: `Zrecenzuj ten diff:\n\n${diff}` },
 ];
 
-// [1] Pierwszy przebieg: ustrukturyzowana recenzja
 const first = await structuredReviewer.generate({ messages });
-messages.push(...first.response.messages); // dopisz, co odpowiedział model
+messages.push(...first.response.messages);
 console.error("[1] recenzja:");
 console.log(JSON.stringify(first.output, null, 2));
 
-// [2] Drugi przebieg: kontynuacja = ty doniosłeś kontekst.
-// Świadomie nie wklejamy diffa ponownie — jest już w `messages` z przebiegu [1].
 messages.push({
   role: "user",
   content:

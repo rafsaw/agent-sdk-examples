@@ -3,11 +3,6 @@ import { z } from "zod";
 import { REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Rola recenzenta (wspólna) — tu świadomie wariant bazowy bez wzmianki o
-// structured output: ten sam system prompt obsługuje też drugi przebieg
-// (zwykły tekst po wznowieniu sesji).
-// JSON Schema egzekwowany przez SDK na wyjściu modelu — z tego samego schematu
-// zoda co przykłady ai-sdk, skonwertowanego jedną linijką.
 const REVIEW_JSON_SCHEMA = z.toJSONSchema(REVIEW_SCHEMA);
 
 const baseOptions = {
@@ -16,7 +11,6 @@ const baseOptions = {
   maxTurns: 2,
 } as const;
 
-// Pierwszy przebieg: zrecenzuj diff i zapamiętaj id sesji
 async function firstPass(
   diff: string,
 ): Promise<{ sessionId: string; review: Review }> {
@@ -49,8 +43,6 @@ async function firstPass(
   return { sessionId, review };
 }
 
-// Drugi przebieg: wznów tę samą sesję i odwołaj się do poprzedniej analizy.
-// Świadomie NIE podajemy diffa ponownie — jeśli sesja pamięta, agent i tak wie, co recenzował.
 async function secondPass(sessionId: string): Promise<string> {
   const result = query({
     prompt:
@@ -66,7 +58,6 @@ async function secondPass(sessionId: string): Promise<string> {
   throw new Error("Brak wyniku z drugiej tury");
 }
 
-// Entry point: query → stop → sessionId → resume → complete
 const diff = await readDiff();
 
 const { sessionId, review } = await firstPass(diff);

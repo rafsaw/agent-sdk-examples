@@ -7,19 +7,13 @@ import {
 } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Rola recenzenta (wspólna) trafia w ai-sdk do pola `instructions`.
-// REVIEW_SCHEMA to zwykły schemat zoda (wspólny dla przykładów) — Output.object
-// składa z niego structured output. W ai-sdk podajesz zoda wprost, bez konwersji.
-
-// Proces review na podstawie git diffa
 async function review(diff: string): Promise<Review> {
-  // Wykorzystanie tzw. pętli agentowej z AI SDK 6
   const reviewer = new ToolLoopAgent({
-    model: openrouter("z-ai/glm-5.1"), // model importujesz jawnie — podmiana dostawcy to jedna linijka
+    model: openrouter("z-ai/glm-5.1"),
     instructions: REVIEWER_PROMPT_STRUCTURED,
-    tools: {}, // na ten moment bez niestandardowych narzędzi
+    tools: {},
     output: Output.object({ schema: REVIEW_SCHEMA }),
-    stopWhen: stepCountIs(2), // odpowiednik maxTurns: recenzja + emisja structured output
+    stopWhen: stepCountIs(2),
   });
 
   const { output } = await reviewer.generate({
@@ -28,6 +22,5 @@ async function review(diff: string): Promise<Review> {
   return output;
 }
 
-// Entry point całego procesu
 const diff = await readDiff();
 console.log(JSON.stringify(await review(diff), null, 2));
