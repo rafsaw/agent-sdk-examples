@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
-import { REVIEW_JSON_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
+import { REVIEW_JSON_SCHEMA, REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
 import { readDiff } from "./utils";
 
 
@@ -29,7 +29,12 @@ async function firstPass(
     }
     if (message.type === "result") {
       if (message.subtype === "success") {
-        review = message.structured_output as Review;
+        // structured_output jest typowany jako unknown — walidujemy po swojej stronie
+        const parsed = REVIEW_SCHEMA.safeParse(message.structured_output);
+        if (!parsed.success) {
+          throw new Error(`Niepoprawny structured output: ${parsed.error.message}`);
+        }
+        review = parsed.data;
       } else {
         throw new Error(
           `Review nie powiodło się (${message.subtype}): ${message.errors.join("; ")}`,

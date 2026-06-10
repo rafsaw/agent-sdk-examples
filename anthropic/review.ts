@@ -2,6 +2,7 @@ import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import {
   REVIEW_JSON_SCHEMA,
+  REVIEW_SCHEMA,
   REVIEWER_PROMPT,
   type Review,
 } from "../common/review-schema";
@@ -22,7 +23,12 @@ async function review(diff: string): Promise<Review> {
   for await (const message of result) {
     if (message.type !== "result") continue;
     if (message.subtype === "success") {
-      return message.structured_output as Review;
+      // structured_output jest typowany jako unknown — walidujemy po swojej stronie
+      const parsed = REVIEW_SCHEMA.safeParse(message.structured_output);
+      if (!parsed.success) {
+        throw new Error(`Niepoprawny structured output: ${parsed.error.message}`);
+      }
+      return parsed.data;
     }
     throw new Error(`Review nie powiodło się (${message.subtype}): ${message.errors.join("; ")}`);
   }
