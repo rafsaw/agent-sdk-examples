@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import { REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";

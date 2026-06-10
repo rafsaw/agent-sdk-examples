@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
 import {

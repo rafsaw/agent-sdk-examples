@@ -11,15 +11,22 @@ no build step.
 
 ```bash
 npm install
+cp .env.example .env   # then fill in your keys
 ```
 
-Authentication: the examples use the **Claude Agent SDK**, which runs through the
-locally installed `claude` CLI and reuses its Claude Code login. If you don't have
-the CLI authenticated, set an API key instead:
+Every example loads `.env` at startup (via `dotenv`), so put your keys there:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=sk-ant-...    # anthropic/* examples (optional — see below)
+OPENROUTER_API_KEY=sk-or-v1-... # ai-sdk/* examples (required)
 ```
+
+`.env` is gitignored; `.env.example` is the committed template.
+
+The **Claude Agent SDK** (`anthropic/*`) also runs through the locally installed
+`claude` CLI and reuses its Claude Code login, so `ANTHROPIC_API_KEY` is optional
+if that CLI is already authenticated. The **Vercel AI SDK** examples (`ai-sdk/*`)
+have no implicit auth and always need `OPENROUTER_API_KEY`.
 
 ## Anthropic — Claude Agent SDK
 
@@ -50,11 +57,10 @@ counterpart so you can read the two categories side by side. The model is
 imported explicitly — here **GLM via OpenRouter** (`z-ai/glm-5.1`) — so swapping
 providers is a one-line change.
 
-Authentication: unlike the Claude examples, these need an explicit key. Set
-`OPENROUTER_API_KEY` before running:
+Authentication: unlike the Claude examples, these need an explicit key —
+`OPENROUTER_API_KEY` in your `.env` (see [Setup](#setup)).
 
 ```bash
-export OPENROUTER_API_KEY=sk-or-v1-...
 npm run aisdk:review              # uses data/sample-1.md
 npm run aisdk:review -- sample-2  # uses data/sample-2.md
 git diff | npm run aisdk:review   # review your working tree

@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ToolLoopAgent, Output, stepCountIs, type ModelMessage } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { REVIEW_SCHEMA, REVIEWER_PROMPT_STRUCTURED } from "../common/review-schema";

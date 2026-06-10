@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ToolLoopAgent, Output, tool, stepCountIs } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";

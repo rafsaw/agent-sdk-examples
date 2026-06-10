@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { ToolLoopAgent, stepCountIs } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { readFileSync } from "node:fs";

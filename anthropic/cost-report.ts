@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
