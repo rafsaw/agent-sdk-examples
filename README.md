@@ -73,3 +73,34 @@ git diff | npm run aisdk:review   # review your working tree
 | `npm run aisdk:session` | [`review-with-session.ts`](./ai-sdk/review-with-session.ts) | **No built-in session** — you carry a `messages[]` history yourself across two passes (structured review, then plain-text recall). |
 | `npm run aisdk:rules` | [`rules-inject.ts`](./ai-sdk/rules-inject.ts) | **Nothing is inherited** — the SDK ignores `.claude/skills`, so the skill file is read from disk and injected into `instructions` manually. |
 | `npm run aisdk:cost` | [`cost-report.ts`](./ai-sdk/cost-report.ts) | Reads **token usage** (`totalUsage`, `onStepFinish`) plus OpenRouter's real **cost** (`providerMetadata`, `usage: { include: true }`); writes `ai-sdk/cost.json`. |
+
+## Evals — model comparison with promptfoo
+
+The [`evals/`](./evals) directory wires the AI SDK review agent into
+[**promptfoo**](https://promptfoo.dev) to compare multiple OpenRouter models
+against the same diffs. Needs `OPENROUTER_API_KEY`.
+
+```bash
+npm run evals        # run the evaluation matrix
+npm run evals:view   # open the promptfoo web UI to browse results
+```
+
+**How it works:**
+
+1. **Prompt axis** — each raw diff from `data/` is fed directly to the agent as
+   the user prompt; the reviewer instructions live in `common/review-schema.ts`
+   as the system prompt (`REVIEWER_PROMPT`).
+2. **Provider axis** — [`provider.ts`](./evals/provider.ts) is a single custom
+   promptfoo provider that wraps the AI SDK `ToolLoopAgent`; the model slug
+   (`google/gemini-3.5-flash`, `z-ai/glm-5.1`, `deepseek/deepseek-v4-pro`) is
+   injected via `config.model` in the YAML so one file covers all three models.
+3. **Assertions** — two default assertions run on every cell:
+   - **Schema** ([`tests/assert-schema.ts`](./evals/tests/assert-schema.ts)) —
+     validates the JSON output against the shared Zod `REVIEW_SCHEMA`.
+   - **Range** — checks every numeric score is an integer in `1–5`.
+4. **LLM-as-a-judge** — per-sample `llm-rubric` assertions check whether the
+   `comment` field caught a specific flaw (e.g. SQL injection, plaintext
+   password, missing keyboard handler). Each rubric is tagged with a `metric`
+   name so the promptfoo results grid shows which model detected which flaw.
+   The judge itself runs through OpenRouter on `claude-sonnet-4.6` — a stronger
+   model than the reviewers being evaluated.
