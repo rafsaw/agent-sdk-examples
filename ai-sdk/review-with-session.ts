@@ -1,12 +1,12 @@
 import "dotenv/config";
 import { ToolLoopAgent, Output, stepCountIs, type ModelMessage } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
-import { REVIEW_SCHEMA, REVIEWER_PROMPT_STRUCTURED } from "../common/review-schema";
+import { REVIEW_SCHEMA, REVIEWER_PROMPT } from "../common/review-schema";
 import { readDiff } from "./utils";
 
 const structuredReviewer = new ToolLoopAgent({
   model: openrouter("z-ai/glm-5.1"),
-  instructions: REVIEWER_PROMPT_STRUCTURED,
+  instructions: REVIEWER_PROMPT,
   output: Output.object({ schema: REVIEW_SCHEMA }),
   stopWhen: stepCountIs(2),
 });

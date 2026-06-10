@@ -4,7 +4,7 @@ import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
 import {
   REVIEW_SCHEMA,
-  REVIEWER_PROMPT_STRUCTURED,
+  REVIEWER_PROMPT,
   type Review,
 } from "../common/review-schema";
 import { readDiff } from "./utils";
@@ -27,7 +27,7 @@ function pruneDiff(diff: string) {
 async function review(diff: string): Promise<Review> {
   const reviewer = new ToolLoopAgent({
     model: openrouter("z-ai/glm-5.1"),
-    instructions: `${REVIEWER_PROMPT_STRUCTURED}\n\nNajpierw pobierz diff przez getReviewableDiff, recenzuj wyłącznie to, co zwróci.`,
+    instructions: `${REVIEWER_PROMPT}\n\nNajpierw pobierz diff przez getReviewableDiff, recenzuj wyłącznie to, co zwróci.`,
     tools: {
       getReviewableDiff: tool({
         description:

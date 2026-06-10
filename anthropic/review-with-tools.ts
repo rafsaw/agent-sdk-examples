@@ -1,14 +1,12 @@
 import "dotenv/config";
 import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
-import { z } from "zod";
 import {
-  REVIEW_SCHEMA,
-  REVIEWER_PROMPT_STRUCTURED,
+  REVIEW_JSON_SCHEMA,
+  REVIEWER_PROMPT,
   type Review,
 } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-const REVIEW_JSON_SCHEMA = z.toJSONSchema(REVIEW_SCHEMA);
 
 const NOISE = [
   /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock)$/,
@@ -61,7 +59,7 @@ async function review(diff: string): Promise<Review> {
   const result = query({
     prompt: messages(),
     options: {
-      systemPrompt: REVIEWER_PROMPT_STRUCTURED,
+      systemPrompt: REVIEWER_PROMPT,
       model: "claude-sonnet-4-6",
       mcpServers: { "review-tools": reviewTools },
       allowedTools: ["mcp__review-tools__get_reviewable_diff"],

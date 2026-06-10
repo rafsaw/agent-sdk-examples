@@ -2,7 +2,7 @@ import { ToolLoopAgent, Output, stepCountIs } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import {
   REVIEW_SCHEMA,
-  REVIEWER_PROMPT_STRUCTURED,
+  REVIEWER_PROMPT,
   type Review,
 } from "../common/review-schema";
 import { readDiff } from "./utils";
@@ -10,7 +10,7 @@ import { readDiff } from "./utils";
 async function review(diff: string): Promise<Review> {
   const reviewer = new ToolLoopAgent({
     model: openrouter("z-ai/glm-5.1"),
-    instructions: REVIEWER_PROMPT_STRUCTURED,
+    instructions: REVIEWER_PROMPT,
     tools: {},
     output: Output.object({ schema: REVIEW_SCHEMA }),
     stopWhen: stepCountIs(2),

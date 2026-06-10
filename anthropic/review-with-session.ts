@@ -1,10 +1,9 @@
 import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { z } from "zod";
-import { REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
+import { REVIEW_JSON_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-const REVIEW_JSON_SCHEMA = z.toJSONSchema(REVIEW_SCHEMA);
 
 const baseOptions = {
   systemPrompt: REVIEWER_PROMPT,
