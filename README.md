@@ -44,7 +44,6 @@ git diff | npm run anthropic:review   # review your working tree
 | Script | File | What it shows |
 |--------|------|---------------|
 | `npm run anthropic:review` | [`review.ts`](./anthropic/review.ts) | A focused review agent that returns **structured JSON output** enforced by a JSON Schema. |
-| `npm run anthropic:tools` | [`review-with-tools.ts`](./anthropic/review-with-tools.ts) | An **in-process MCP tool** (`get_reviewable_diff`) that prunes noise (lockfiles, build output, snapshots) before the model reviews. |
 | `npm run anthropic:session` | [`review-with-session.ts`](./anthropic/review-with-session.ts) | **Session resume** — review once, then ask a follow-up that reuses the prior context without re-sending the diff. |
 | `npm run anthropic:skill` | [`skill-autoload.ts`](./anthropic/skill-autoload.ts) | **Skill autoload** — the agent discovers and applies `.claude/skills/greeting` on its own. |
 | `npm run anthropic:cost` | [`cost-report.ts`](./anthropic/cost-report.ts) | Reads **cost and token usage** from the result message and writes a report to `anthropic/cost.json`. |
@@ -69,7 +68,6 @@ git diff | npm run aisdk:review   # review your working tree
 | Script | File | What it shows |
 |--------|------|---------------|
 | `npm run aisdk:review` | [`review.ts`](./ai-sdk/review.ts) | A `ToolLoopAgent` returning **structured output** validated by a Zod schema (`Output.object`). |
-| `npm run aisdk:tools` | [`review-with-tools.ts`](./ai-sdk/review-with-tools.ts) | A custom **`tool()`** (`getReviewableDiff`) that prunes noise from a closure before the model reviews — `tools` is a record, input is `inputSchema`. |
 | `npm run aisdk:session` | [`review-with-session.ts`](./ai-sdk/review-with-session.ts) | **No built-in session** — you carry a `messages[]` history yourself across two passes (structured review, then plain-text recall). |
 | `npm run aisdk:rules` | [`rules-inject.ts`](./ai-sdk/rules-inject.ts) | **Nothing is inherited** — the SDK ignores `.claude/skills`, so the skill file is read from disk and injected into `instructions` manually. |
 | `npm run aisdk:cost` | [`cost-report.ts`](./ai-sdk/cost-report.ts) | Reads **token usage** (`totalUsage`, `onStepFinish`) plus OpenRouter's real **cost** (`providerMetadata`, `usage: { include: true }`); writes `ai-sdk/cost.json`. |

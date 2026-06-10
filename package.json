@@ -4,12 +4,10 @@
   "main": "index.js",
   "scripts": {
     "anthropic:review": "tsx anthropic/review.ts",
-    "anthropic:tools": "tsx anthropic/review-with-tools.ts",
     "anthropic:session": "tsx anthropic/review-with-session.ts",
     "anthropic:skill": "tsx anthropic/skill-autoload.ts",
     "anthropic:cost": "tsx anthropic/cost-report.ts",
     "aisdk:review": "tsx ai-sdk/review.ts",
-    "aisdk:tools": "tsx ai-sdk/review-with-tools.ts",
     "aisdk:session": "tsx ai-sdk/review-with-session.ts",
     "aisdk:rules": "tsx ai-sdk/rules-inject.ts",
     "aisdk:cost": "tsx ai-sdk/cost-report.ts",
