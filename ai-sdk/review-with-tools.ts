@@ -1,26 +1,16 @@
 import { ToolLoopAgent, Output, tool, stepCountIs } from "ai";
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { z } from "zod";
+import {
+  REVIEW_SCHEMA,
+  REVIEWER_PROMPT_STRUCTURED,
+  type Review,
+} from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Rola recenzenta — w wersji do złożenia trafia do pola `instructions`
-const INSTRUCTIONS = `Jesteś rygorystycznym recenzentem kodu.
-Oceń podany diff w pięciu kryteriach w skali 1-5 (1 = poważne braki, 5 = wzorowo):
-poprawność, bezpieczeństwo, wydajność, czytelność, pokrycie testami.
-Dodaj krótki komentarz (2-3 zdania) wskazujący najważniejsze obserwacje.
-Zwróć wyłącznie ustrukturyzowany wynik zgodny ze schematem.`;
-
-// Schemat zoda — z niego Output.object składa structured output
-const REVIEW_SCHEMA = z.object({
-  correctness: z.number().int().min(1).max(5),
-  security: z.number().int().min(1).max(5),
-  performance: z.number().int().min(1).max(5),
-  readability: z.number().int().min(1).max(5),
-  testCoverage: z.number().int().min(1).max(5),
-  comment: z.string(),
-});
-
-type Review = z.infer<typeof REVIEW_SCHEMA>;
+// Rola recenzenta (wspólna) trafia w ai-sdk do pola `instructions`.
+// REVIEW_SCHEMA (zod) jest wspólny dla przykładów; Output.object składa z niego
+// structured output. Zod nadal przyda się niżej do inputSchema narzędzia.
 
 // Pliki, które w recenzji tylko zasłaniają sygnał: lockfile'y, build, snapshoty.
 const NOISE = [
@@ -43,7 +33,7 @@ function pruneDiff(diff: string) {
 async function review(diff: string): Promise<Review> {
   const reviewer = new ToolLoopAgent({
     model: openrouter("z-ai/glm-5.1"),
-    instructions: `${INSTRUCTIONS}\n\nNajpierw pobierz diff przez getReviewableDiff, recenzuj wyłącznie to, co zwróci.`,
+    instructions: `${REVIEWER_PROMPT_STRUCTURED}\n\nNajpierw pobierz diff przez getReviewableDiff, recenzuj wyłącznie to, co zwróci.`,
     tools: {
       // narzędzie z trzech części: opis, schemat wejścia (zod) i execute
       getReviewableDiff: tool({

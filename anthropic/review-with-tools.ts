@@ -1,44 +1,16 @@
 import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
+import {
+  REVIEW_SCHEMA,
+  REVIEWER_PROMPT_STRUCTURED,
+  type Review,
+} from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Wynik recenzji: pięć kryteriów (1-5) plus krótki komentarz
-interface Review {
-  correctness: number;
-  security: number;
-  performance: number;
-  readability: number;
-  testCoverage: number;
-  comment: string;
-}
-
-// Rola recenzenta — wąska i przewidywalna, bez dziedziczenia z repo
-const SYSTEM_PROMPT = `Jesteś rygorystycznym recenzentem kodu.
-Oceń podany diff w pięciu kryteriach w skali 1-5 (1 = poważne braki, 5 = wzorowo):
-poprawność, bezpieczeństwo, wydajność, czytelność, pokrycie testami.
-Dodaj krótki komentarz (2-3 zdania) wskazujący najważniejsze obserwacje.
-Zwróć wyłącznie ustrukturyzowany wynik zgodny ze schematem.`;
-
-// JSON Schema egzekwowany przez SDK na wyjściu modelu
-const REVIEW_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "correctness",
-    "security",
-    "performance",
-    "readability",
-    "testCoverage",
-    "comment",
-  ],
-  properties: {
-    correctness: { type: "integer", minimum: 1, maximum: 5 },
-    security: { type: "integer", minimum: 1, maximum: 5 },
-    performance: { type: "integer", minimum: 1, maximum: 5 },
-    readability: { type: "integer", minimum: 1, maximum: 5 },
-    testCoverage: { type: "integer", minimum: 1, maximum: 5 },
-    comment: { type: "string" },
-  },
-} as const;
+// Rola recenzenta (wspólna) — wąska i przewidywalna, bez dziedziczenia z repo.
+// JSON Schema egzekwowany przez SDK na wyjściu modelu — z tego samego schematu
+// zoda co przykłady ai-sdk, skonwertowanego jedną linijką.
+const REVIEW_JSON_SCHEMA = z.toJSONSchema(REVIEW_SCHEMA);
 
 // Pliki, które w recenzji tylko zasłaniają sygnał: lockfile'y, build, snapshoty.
 const NOISE = [
@@ -97,12 +69,12 @@ async function review(diff: string): Promise<Review> {
   const result = query({
     prompt: messages(),
     options: {
-      systemPrompt: SYSTEM_PROMPT,
+      systemPrompt: REVIEWER_PROMPT_STRUCTURED,
       model: "claude-sonnet-4-6",
       mcpServers: { "review-tools": reviewTools }, // narzędzie jako serwer MCP w procesie
       allowedTools: ["mcp__review-tools__get_reviewable_diff"], // jawnie dopuszczasz je po nazwie
       maxTurns: 4, // jak stepCountIs: zrób miejsce na turę narzędzia
-      outputFormat: { type: "json_schema", schema: REVIEW_SCHEMA },
+      outputFormat: { type: "json_schema", schema: REVIEW_JSON_SCHEMA },
     },
   });
 

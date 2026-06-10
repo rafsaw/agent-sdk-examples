@@ -1,46 +1,17 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
+import { REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
 import { readDiff } from "./utils";
 
-// Wynik recenzji: pięć kryteriów (1-5) plus krótki komentarz
-interface Review {
-  correctness: number;
-  security: number;
-  performance: number;
-  readability: number;
-  testCoverage: number;
-  comment: string;
-}
-
-// Rola recenzenta — wąska i przewidywalna, bez dziedziczenia z repo
-const SYSTEM_PROMPT = `Jesteś rygorystycznym recenzentem kodu.
-Oceń podany diff w pięciu kryteriach w skali 1-5 (1 = poważne braki, 5 = wzorowo):
-poprawność, bezpieczeństwo, wydajność, czytelność, pokrycie testami.
-Dodaj krótki komentarz (2-3 zdania) wskazujący najważniejsze obserwacje.`;
-
-// JSON Schema egzekwowany przez SDK na wyjściu modelu
-const REVIEW_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "correctness",
-    "security",
-    "performance",
-    "readability",
-    "testCoverage",
-    "comment",
-  ],
-  properties: {
-    correctness: { type: "integer", minimum: 1, maximum: 5 },
-    security: { type: "integer", minimum: 1, maximum: 5 },
-    performance: { type: "integer", minimum: 1, maximum: 5 },
-    readability: { type: "integer", minimum: 1, maximum: 5 },
-    testCoverage: { type: "integer", minimum: 1, maximum: 5 },
-    comment: { type: "string" },
-  },
-} as const;
+// Rola recenzenta (wspólna) — tu świadomie wariant bazowy bez wzmianki o
+// structured output: ten sam system prompt obsługuje też drugi przebieg
+// (zwykły tekst po wznowieniu sesji).
+// JSON Schema egzekwowany przez SDK na wyjściu modelu — z tego samego schematu
+// zoda co przykłady ai-sdk, skonwertowanego jedną linijką.
+const REVIEW_JSON_SCHEMA = z.toJSONSchema(REVIEW_SCHEMA);
 
 const baseOptions = {
-  systemPrompt: SYSTEM_PROMPT,
+  systemPrompt: REVIEWER_PROMPT,
   model: "claude-sonnet-4-6",
   maxTurns: 2,
 } as const;
@@ -56,7 +27,7 @@ async function firstPass(
     prompt: `Zrecenzuj ten diff:\n\n${diff}`,
     options: {
       ...baseOptions,
-      outputFormat: { type: "json_schema", schema: REVIEW_SCHEMA },
+      outputFormat: { type: "json_schema", schema: REVIEW_JSON_SCHEMA },
     },
   })) {
     if (message.type === "system" && message.subtype === "init") {
