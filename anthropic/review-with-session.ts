@@ -1,7 +1,6 @@
 import "dotenv/config";
 import { query } from "@anthropic-ai/claude-agent-sdk";
-import { z } from "zod";
-import { REVIEW_JSON_SCHEMA, REVIEW_SCHEMA, REVIEWER_PROMPT, type Review } from "../common/review-schema";
+import { REVIEW_JSON_SCHEMA, REVIEWER_PROMPT, ReviewResult } from "../common/review-schema";
 import { readDiff } from "./utils";
 
 
@@ -13,9 +12,9 @@ const baseOptions = {
 
 async function firstPass(
   diff: string,
-): Promise<{ sessionId: string; review: Review }> {
+): Promise<{ sessionId: string; review: ReviewResult }> {
   let sessionId: string | undefined;
-  let review: Review | undefined;
+  let review: ReviewResult | undefined;
 
   for await (const message of query({
     prompt: `Zrecenzuj ten diff:\n\n${diff}`,
@@ -30,7 +29,7 @@ async function firstPass(
     if (message.type === "result") {
       if (message.subtype === "success") {
         // structured_output jest typowany jako unknown — walidujemy po swojej stronie
-        const parsed = REVIEW_SCHEMA.safeParse(message.structured_output);
+        const parsed = ReviewResult.safeParse(message.structured_output);
         if (!parsed.success) {
           throw new Error(`Niepoprawny structured output: ${parsed.error.message}`);
         }

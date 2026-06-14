@@ -94,11 +94,12 @@ npm run evals:view   # open the promptfoo web UI to browse results
    injected via `config.model` in the YAML so one file covers all three models.
 3. **Assertions** — two default assertions run on every cell:
    - **Schema** ([`tests/assert-schema.ts`](./evals/tests/assert-schema.ts)) —
-     validates the JSON output against the shared Zod `REVIEW_SCHEMA`.
-   - **Range** — checks every numeric score is an integer in `1–5`.
+     validates the JSON output against the shared Zod `ReviewResult`.
+   - **Range** — checks all six criterion scores are integers in `1–10` and the
+     `verdict` is `pass`/`fail`.
 4. **LLM-as-a-judge** — per-sample `llm-rubric` assertions check whether the
-   `comment` field caught a specific flaw (e.g. SQL injection, plaintext
-   password, missing keyboard handler). Each rubric is tagged with a `metric`
+   `summary` (or a criterion `rationale`) caught a specific flaw (e.g. SQL
+   injection, plaintext password, missing keyboard handler). Each rubric is tagged with a `metric`
    name so the promptfoo results grid shows which model detected which flaw.
    The judge itself runs through OpenRouter on `claude-sonnet-4.6` — a stronger
    model than the reviewers being evaluated.

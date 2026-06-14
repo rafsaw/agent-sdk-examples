@@ -25,22 +25,25 @@ providers:
 # Asercje wspólne dla każdego testu i każdego modelu (walidacja techniczna).
 defaultTest:
   assert:
-    # 1) Strukturalna — wyjście musi pasować do REVIEW_SCHEMA (Zod).
+    # 1) Strukturalna — wyjście musi pasować do ReviewResult (Zod).
     - type: javascript
       value: file://./tests/assert-schema.ts
-    # 2) Deterministyczna — wszystkie oceny w dozwolonym zakresie 1-5.
+    # 2) Deterministyczna — sześć ocen w dozwolonym zakresie 1-10 i poprawny werdykt.
     - type: javascript
       value: |
         const r = JSON.parse(output);
-        return [r.correctness, r.security, r.performance, r.readability, r.testCoverage]
-          .every((n) => Number.isInteger(n) && n >= 1 && n <= 5);
+        const scores = Object.values(r.criteria ?? {}).map((c) => c.score);
+        return scores.length === 6
+          && scores.every((n) => Number.isInteger(n) && n >= 1 && n <= 10)
+          && ["pass", "fail"].includes(r.verdict);
   options:
     # Sędzia dla llm-rubric też przez OpenRouter (jeden klucz API w całym evalu).
     # Mocniejszy model na ławie sędziowskiej niż recenzenci, których ocenia.
     provider: openrouter:anthropic/claude-sonnet-4.6
 
-# Per-sample llm-as-a-judge: każda asercja sprawdza, czy pole "comment" wskazuje
-# JEDNĄ konkretną wadę z danego diffu. Nazwane metryki (metric) agregują wykrywalność
+# Per-sample llm-as-a-judge: każda asercja sprawdza, czy pole "summary" (lub
+# uzasadnienia kryteriów) wskazuje JEDNĄ konkretną wadę z danego diffu.
+# Nazwane metryki (metric) agregują wykrywalność
 # poszczególnych wad w siatce wyników — widać, który model co złapał.
 tests:
   # ── sample-1: src/auth.js — wprowadza funkcję login() pełną luk bezpieczeństwa ──
@@ -51,26 +54,28 @@ tests:
       - type: llm-rubric
         metric: sqli
         value: >
-          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "comment"
-          wskazuje SQL injection / podatność na wstrzyknięcie SQL wynikającą z
-          konkatenacji nazwy użytkownika do zapytania. Inaczej pass=false.
+          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "summary"
+          lub którekolwiek "criteria.*.rationale" wskazuje SQL injection / podatność
+          na wstrzyknięcie SQL wynikającą z konkatenacji nazwy użytkownika do
+          zapytania. Inaczej pass=false.
       - type: llm-rubric
         metric: plaintext-password
         value: >
-          pass=true wyłącznie jeśli "comment" zauważa, że hasło jest porównywane
-          w postaci jawnej (plaintext), bez hashowania. Inaczej pass=false.
+          pass=true wyłącznie jeśli "summary" lub uzasadnienia kryteriów zauważają,
+          że hasło jest porównywane w postaci jawnej (plaintext), bez hashowania.
+          Inaczej pass=false.
       - type: llm-rubric
         metric: weak-token
         value: >
-          pass=true wyłącznie jeśli "comment" wskazuje, że token sesji ("tok_" +
-          username) jest przewidywalny / niebezpieczny i powinien być losowy.
-          Inaczej pass=false.
+          pass=true wyłącznie jeśli "summary" lub uzasadnienia kryteriów wskazują,
+          że token sesji ("tok_" + username) jest przewidywalny / niebezpieczny
+          i powinien być losowy. Inaczej pass=false.
       - type: llm-rubric
         metric: missing-null-check
         value: >
-          pass=true wyłącznie jeśli "comment" zauważa brak sprawdzenia, czy
-          użytkownik istnieje (rows[0] / user może być undefined przed odczytem
-          user.password). Inaczej pass=false.
+          pass=true wyłącznie jeśli "summary" lub uzasadnienia kryteriów zauważają
+          brak sprawdzenia, czy użytkownik istnieje (rows[0] / user może być
+          undefined przed odczytem user.password). Inaczej pass=false.
 
   # ── sample-2: UserCard.tsx — dodaje interaktywność (klikalna karta) ──
   - description: sample-2 (UserCard.tsx)
@@ -80,18 +85,20 @@ tests:
       - type: llm-rubric
         metric: keyboard-a11y
         value: >
-          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "comment"
-          wskazuje problem dostępności: element z role="button" i onClick nie ma
-          obsługi klawiatury (brak onKeyDown/onKeyUp), więc jest nieobsługiwalny
-          z klawiatury. Inaczej pass=false.
+          Oceniasz obiekt recenzji (JSON). pass=true wyłącznie jeśli pole "summary"
+          lub którekolwiek "criteria.*.rationale" wskazuje problem dostępności:
+          element z role="button" i onClick nie ma obsługi klawiatury
+          (brak onKeyDown/onKeyUp), więc jest nieobsługiwalny z klawiatury.
+          Inaczej pass=false.
       - type: llm-rubric
         metric: semantic-button
         value: >
-          pass=true wyłącznie jeśli "comment" sugeruje użycie semantycznego
-          <button> zamiast klikalnego <div> z role="button". Inaczej pass=false.
+          pass=true wyłącznie jeśli "summary" lub uzasadnienia kryteriów sugerują
+          użycie semantycznego <button> zamiast klikalnego <div> z role="button".
+          Inaczej pass=false.
       - type: llm-rubric
         metric: missing-tests
         value: >
-          pass=true wyłącznie jeśli "comment" zauważa brak testów dla nowej
-          logiki interakcji (handleClick / stan expanded / wywołanie onSelect).
-          Inaczej pass=false.
+          pass=true wyłącznie jeśli "summary" lub uzasadnienia kryteriów zauważają
+          brak testów dla nowej logiki interakcji (handleClick / stan expanded /
+          wywołanie onSelect). Inaczej pass=false.

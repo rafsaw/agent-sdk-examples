@@ -1,4 +1,4 @@
-import { REVIEW_SCHEMA } from "../../common/review-schema";
+import { ReviewResult } from "../../common/review-schema";
 
 export default function assertSchema(output: string) {
   let parsed: unknown;
@@ -8,7 +8,7 @@ export default function assertSchema(output: string) {
     return { pass: false, score: 0, reason: "Wyjście nie jest poprawnym JSON-em" };
   }
 
-  const result = REVIEW_SCHEMA.safeParse(parsed);
+  const result = ReviewResult.safeParse(parsed);
   if (result.success) {
     return { pass: true, score: 1, reason: "Zgodne ze schematem recenzji" };
   }
