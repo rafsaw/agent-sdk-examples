@@ -5,9 +5,9 @@ Guidance for AI coding agents working in this repository.
 ## What this is
 
 A collection of small, runnable examples of programmatic agent usage. Each
-example is a self-contained TypeScript script demonstrating one feature of an
-agent SDK. There is no application to build or deploy — the scripts *are* the
-product.
+example is a self-contained script demonstrating one feature of an agent SDK.
+Most examples are TypeScript; `anthropic-python/` is a Python column. There is
+no application to build or deploy — the scripts *are* the product.
 
 ## Layout
 
@@ -27,6 +27,11 @@ ai-sdk/                 Vercel AI SDK 6 examples (assemble-it-yourself agent)
   rules-inject.ts       Nothing inherited — read SKILL.md and inject into instructions
   cost-report.ts        Token usage (totalUsage/onStepFinish) + OpenRouter cost
   utils.ts              readDiff(): stdin or data/<sample>.md (own copy)
+anthropic-python/       Claude Agent SDK examples in Python (uv-managed)
+  review.py             Structured JSON output; model swap + OpenRouter via env=
+  review_schema.py      Pydantic models (schema source + validation) + prompt
+  utils.py              read_diff(): stdin or data/<sample>.md (own copy)
+  pyproject.toml        Deps + uv config (package = false)
 data/                   Sample diffs the review examples operate on
 ```
 
@@ -38,13 +43,21 @@ data/                   Sample diffs the review examples operate on
 - `npm run anthropic:review -- sample-2` — pass a different sample diff
 - `git diff | npm run anthropic:review` — review a real diff from stdin
 
-Scripts run via `tsx` (ESM, no build step). `npm test` is the npm placeholder
-and intentionally exits 1 — there is no test suite yet.
+TypeScript scripts run via `tsx` (ESM, no build step). `npm test` is the npm
+placeholder and intentionally exits 1 — there is no test suite yet.
+
+The Python column uses **[uv](https://docs.astral.sh/uv/)**:
+
+- `cd anthropic-python && uv run review.py` — `uv run` syncs `.venv` from
+  `pyproject.toml` on first use (no manual venv/pip).
+- `uv run review.py sample-2` / `git diff | uv run review.py` — same diff
+  sourcing as the TS examples.
 
 ## Conventions
 
 - **TypeScript, ESM** (`"type": "module"`), strict mode, `noEmit`. Use
-  `import.meta.dirname` for paths, not `__dirname`.
+  `import.meta.dirname` for paths, not `__dirname`. The Python column is
+  uv-managed; declare deps in `anthropic-python/pyproject.toml`, not `pip`.
 - **Code comments are in Polish** — match the existing language and style when
   editing or adding examples. User-facing docs (README) are in English.
 - Each example stays **minimal and self-contained**: one file, one feature, no

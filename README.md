@@ -48,6 +48,33 @@ git diff | npm run anthropic:review   # review your working tree
 | `npm run anthropic:skill` | [`skill-autoload.ts`](./anthropic/skill-autoload.ts) | **Skill autoload** — the agent discovers and applies `.claude/skills/greeting` on its own. |
 | `npm run anthropic:cost` | [`cost-report.ts`](./anthropic/cost-report.ts) | Reads **cost and token usage** from the result message and writes a report to `anthropic/cost.json`. |
 
+## Claude Agent SDK — Python
+
+The same code-review agent as `anthropic/review.ts`, but in **Python** with the
+[`claude-agent-sdk`](https://github.com/anthropics/claude-agent-sdk-python)
+package. It lives in [`anthropic-python/`](./anthropic-python) and adds one thing
+the TypeScript version doesn't show: **swapping the model and routing through
+OpenRouter**. Because the SDK runs the `claude` CLI as a subprocess, it inherits
+Claude Code's env vars — so `ClaudeAgentOptions(env=...)` is all it takes to point
+at OpenRouter.
+
+Managed with [`uv`](https://docs.astral.sh/uv/) — `uv run` syncs the venv on
+first use:
+
+```bash
+cd anthropic-python
+uv run review.py                                          # OpenRouter if OPENROUTER_API_KEY is set, else direct
+OPENROUTER_MODEL=openai/gpt-5 uv run review.py            # swap the OpenRouter model
+OPENROUTER_API_KEY= uv run review.py                      # force direct Anthropic
+```
+
+Routing follows `OPENROUTER_API_KEY`: set → OpenRouter, empty/unset → direct
+Anthropic. Since a `.env` typically carries that key for the `ai-sdk` examples,
+runs default to OpenRouter; blank it with an empty shell var
+(`OPENROUTER_API_KEY=`) for the direct path. See
+[`anthropic-python/README.md`](./anthropic-python/README.md) for the full env-var
+table and caveats.
+
 ## Vercel AI SDK — assemble-it-yourself agent
 
 The same code-review agent, built with the **Vercel AI SDK 6** (`ToolLoopAgent`)
