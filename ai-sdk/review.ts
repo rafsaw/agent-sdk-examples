@@ -5,6 +5,7 @@ import {
   ReviewResult,
 } from "../common/review-schema";
 import { readDiff } from "./utils";
+import "dotenv/config";
 
 async function review(diff: string): Promise<ReviewResult> {
   const reviewer = new ToolLoopAgent({
