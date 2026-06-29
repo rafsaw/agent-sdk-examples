@@ -16,16 +16,29 @@ const REVIEW_MODEL = "z-ai/glm-5.2";
 
 async function review(diff: string): Promise<ReviewResult> {
   const reviewer = new ToolLoopAgent({
-    model: openrouter(REVIEW_MODEL),
+    model: openrouter(REVIEW_MODEL, { usage: { include: true } }),
     instructions: REVIEWER_PROMPT,
     tools: {},
     output: Output.object({ schema: ReviewResult }),
     stopWhen: stepCountIs(2),
   });
 
-  const { output } = await reviewer.generate({
+  const { output, totalUsage, providerMetadata } = await reviewer.generate({
     prompt: `Zrecenzuj ten diff:\n\n${diff}`,
+    onStepFinish: ({ stepNumber, usage, finishReason }) => {
+      console.error(`krok ${stepNumber}: ${usage.inputTokens} in / ${usage.outputTokens} out (${finishReason})`);
+    },
   });
+
+  const openrouterUsage = providerMetadata?.openrouter?.usage as
+    | { cost?: number; totalTokens?: number }
+    | undefined;
+
+  console.error(
+    `łącznie: ${totalUsage.inputTokens} in / ${totalUsage.outputTokens} out / ${totalUsage.totalTokens} total`,
+  );
+  console.error(`koszt OpenRouter: ${openrouterUsage?.cost ?? "brak danych od providera"} USD`);
+
   return output;
 }
 
